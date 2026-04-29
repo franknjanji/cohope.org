@@ -1,11 +1,11 @@
+import express from 'express';
 import { supabaseAdmin } from '../lib/supabase-admin.js';
 import { sendCallbackNotification } from '../lib/email.js';
 import { sendSmsToAdmin } from '../lib/twilio.js';
 
-export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+const router = express.Router();
 
+router.post('/', async (req, res) => {
   try {
     const { name, phone, email, preferredTime, reason } = req.body;
 
@@ -46,4 +46,6 @@ export default async function handler(req, res) {
     console.error('Callback API error:', err);
     return res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
-}
+});
+
+export default router;

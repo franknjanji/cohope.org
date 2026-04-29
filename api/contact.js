@@ -1,17 +1,11 @@
+import express from 'express';
 import { supabaseAdmin } from '../lib/supabase-admin.js';
 import { sendContactNotification, sendContactAutoReply } from '../lib/email.js';
 import { sendSmsToAdmin } from '../lib/twilio.js';
 
-export default async function handler(req, res) {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+const router = express.Router();
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+router.post('/', async (req, res) => {
   try {
     const { name, email, phone, subject, message } = req.body;
 
@@ -57,4 +51,6 @@ export default async function handler(req, res) {
     console.error('Contact API error:', err);
     return res.status(500).json({ error: 'Something went wrong. Please try again or email us directly.' });
   }
-}
+});
+
+export default router;

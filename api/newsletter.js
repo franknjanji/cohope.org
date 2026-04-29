@@ -1,11 +1,11 @@
+import express from 'express';
 import { supabaseAdmin } from '../lib/supabase-admin.js';
 import { subscribeToNewsletter } from '../lib/mailchimp.js';
 import { sendNewsletterWelcome } from '../lib/email.js';
 
-export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+const router = express.Router();
 
+router.post('/', async (req, res) => {
   try {
     const { email, firstName, lastName, ageGroup, heritageBackground } = req.body;
 
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
+    const siteUrl = process.env.SITE_URL || '';
     const unsubscribeUrl = siteUrl
       ? `${siteUrl}/api/newsletter/unsubscribe?email=${encodeURIComponent(cleanEmail)}`
       : '';
@@ -90,4 +90,6 @@ export default async function handler(req, res) {
     console.error('Newsletter API error:', err);
     return res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
-}
+});
+
+export default router;

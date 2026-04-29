@@ -1,11 +1,11 @@
+import express from 'express';
 import { supabaseAdmin } from '../lib/supabase-admin.js';
 import { sendRegistrationConfirmation, sendRegistrationNotification } from '../lib/email.js';
 import { sendSmsToAdmin } from '../lib/twilio.js';
 
-export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+const router = express.Router();
 
+router.post('/', async (req, res) => {
   try {
     const {
       name,
@@ -30,7 +30,6 @@ export default async function handler(req, res) {
     if (!ageGroup) return res.status(400).json({ error: 'Please select your age group.' });
 
     const cleanEmail = email.trim().toLowerCase();
-
     const cleanEventName = eventName.trim();
 
     // ── Check for duplicate registration (frontend sends eventName, not eventId) ──
@@ -87,4 +86,6 @@ export default async function handler(req, res) {
     console.error('Register API error:', err);
     return res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
-}
+});
+
+export default router;

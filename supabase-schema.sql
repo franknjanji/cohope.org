@@ -72,6 +72,18 @@ ALTER TABLE newsletter_subscribers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_registrations    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE callback_requests      ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (to allow re-running)
+DROP POLICY IF EXISTS "Allow public insert" ON contact_submissions;
+DROP POLICY IF EXISTS "Allow public insert" ON newsletter_subscribers;
+DROP POLICY IF EXISTS "Allow public insert" ON event_registrations;
+DROP POLICY IF EXISTS "Allow public insert" ON callback_requests;
+DROP POLICY IF EXISTS "Allow public select" ON newsletter_subscribers;
+DROP POLICY IF EXISTS "Allow public select" ON event_registrations;
+DROP POLICY IF EXISTS "Allow authenticated full access" ON contact_submissions;
+DROP POLICY IF EXISTS "Allow authenticated full access" ON newsletter_subscribers;
+DROP POLICY IF EXISTS "Allow authenticated full access" ON event_registrations;
+DROP POLICY IF EXISTS "Allow authenticated full access" ON callback_requests;
+
 -- Allow public insert only
 CREATE POLICY "Allow public insert" ON contact_submissions    FOR INSERT TO anon WITH CHECK (true);
 CREATE POLICY "Allow public insert" ON newsletter_subscribers FOR INSERT TO anon WITH CHECK (true);
