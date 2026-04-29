@@ -1,5 +1,6 @@
-import { supabase } from '../lib/supabase.js';
+import { supabaseAdmin } from '../lib/supabase-admin.js';
 import { sendRegistrationConfirmation, sendRegistrationNotification } from '../lib/email.js';
+import { sendSmsToAdmin } from '../lib/twilio.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -30,29 +31,29 @@ export default async function handler(req, res) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // ── Check for duplicate registration ──
-    if (eventId) {
-      const { data: dupe } = await supabase
-        .from('event_registrations')
-        .select('id')
-        .eq('email', cleanEmail)
-        .eq('event_id', eventId)
-        .single();
+    const cleanEventName = eventName.trim();
 
-      if (dupe) {
-        return res.status(200).json({
-          success: true,
-          message: 'You are already registered for this event. We look forward to seeing you!',
-        });
-      }
+    // ── Check for duplicate registration (frontend sends eventName, not eventId) ──
+    const { data: dupe } = await supabaseAdmin
+      .from('event_registrations')
+      .select('id')
+      .eq('email', cleanEmail)
+      .eq('event_name', cleanEventName)
+      .maybeSingle();
+
+    if (dupe) {
+      return res.status(200).json({
+        success: true,
+        message: 'You are already registered for this session. We look forward to seeing you!',
+      });
     }
 
     // ── Save registration ──
-    const { error: dbError } = await supabase.from('event_registrations').insert({
+    const { error: dbError } = await supabaseAdmin.from('event_registrations').insert({
       name: name.trim(),
       email: cleanEmail,
       phone: phone?.trim() || null,
-      event_name: eventName.trim(),
+      event_name: cleanEventName,
       event_id: eventId || null,
       event_date: eventDate || null,
       age_group: ageGroup,
@@ -69,10 +70,13 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Could not save your registration. Please try again.' });
     }
 
-    // ── Confirmation emails (parallel) ──
+    const smsBody = `New registration: ${name.trim()} — ${cleanEventName} — ${ageGroup} — ${cleanEmail}`.slice(0, 450);
+
+    // ── Confirmation emails + SMS (parallel) ──
     await Promise.allSettled([
-      sendRegistrationConfirmation({ name, email: cleanEmail, eventName, eventDate, phone }),
-      sendRegistrationNotification({ name, email: cleanEmail, phone, eventName, ageGroup, heritageBackground, notes }),
+      sendRegistrationConfirmation({ name, email: cleanEmail, eventName: cleanEventName, eventDate, phone }),
+      sendRegistrationNotification({ name, email: cleanEmail, phone, eventName: cleanEventName, ageGroup, heritageBackground, notes }),
+      sendSmsToAdmin({ body: smsBody }),
     ]);
 
     return res.status(200).json({

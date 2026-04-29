@@ -1,5 +1,6 @@
-import { supabase } from '../lib/supabase.js';
+import { supabaseAdmin } from '../lib/supabase-admin.js';
 import { sendContactNotification, sendContactAutoReply } from '../lib/email.js';
+import { sendSmsToAdmin } from '../lib/twilio.js';
 
 export default async function handler(req, res) {
   // Handle CORS preflight
@@ -24,7 +25,7 @@ export default async function handler(req, res) {
     }
 
     // ── Save to Supabase ──
-    const { error: dbError } = await supabase.from('contact_submissions').insert({
+    const { error: dbError } = await supabaseAdmin.from('contact_submissions').insert({
       name: name.trim(),
       email: email.trim().toLowerCase(),
       phone: phone?.trim() || null,
@@ -39,10 +40,13 @@ export default async function handler(req, res) {
       // Don't block — still send email
     }
 
-    // ── Send emails (parallel) ──
+    const smsBody = `New contact: ${name.trim()} (${email.trim().toLowerCase()}) — ${subject?.trim() || 'General'}${phone?.trim() ? ` — ${phone.trim()}` : ''}`;
+
+    // ── Send emails + SMS (parallel) ──
     await Promise.allSettled([
       sendContactNotification({ name, email, phone, subject, message }),
       sendContactAutoReply({ name, email }),
+      sendSmsToAdmin({ body: smsBody }),
     ]);
 
     return res.status(200).json({

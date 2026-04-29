@@ -12,7 +12,7 @@
 | Hosting & Serverless Functions | [Vercel](https://vercel.com) |
 | Transactional Email | [Resend](https://resend.com) |
 | Mailing List / Newsletter | [Mailchimp](https://mailchimp.com) |
-| Database (registrations) | [Vercel Postgres](https://vercel.com/storage/postgres) |
+| Database (submissions) | [Supabase](https://supabase.com) |
 | SMS / Phone Notifications | [Twilio](https://twilio.com) |
 
 ---
@@ -148,20 +148,15 @@ TWILIO_ADMIN_NUMBER = +447700000000   ← YOUR personal number for alerts
 
 ---
 
-### STEP 7 — Set Up the Database (Vercel Postgres)
+### STEP 7 — Set Up Supabase (database)
 
-1. In your Vercel project, click **Storage → Create Database → Postgres**.
-2. Name it `cohope-db` → click **Create**.
-3. Vercel automatically injects the `POSTGRES_*` environment variables — no manual setup needed.
-4. **Run the database setup script once:**
-
-```bash
-# On your local machine, with .env.local filled in:
-npm install
-node scripts/db-setup.js
-```
-
-This creates the four tables: `registrations`, `events`, `newsletter_subscribers`, `contact_submissions`.
+1. Create a Supabase project.
+2. In Supabase Dashboard → **SQL Editor**, run `supabase-schema.sql`.
+3. In your Vercel project, set these environment variables (from `.env.example`):
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `ADMIN_API_KEY`
 
 ---
 
@@ -254,9 +249,17 @@ All endpoints return JSON: `{ success: true, message: "..." }` or `{ error: "...
 
 ---
 
-## Coming Next (Phase 2)
+## Phase 2 — Admin Surface (API)
 
-When you're ready, these can be added:
+Admin endpoints are available (token-protected). Send:
+- `Authorization: Bearer <ADMIN_API_KEY>`
+
+Endpoints:
+- `GET /api/admin/contact` + `PATCH /api/admin/contact` (contact_submissions)
+- `GET /api/admin/registrations` + `PATCH /api/admin/registrations` (event_registrations)
+- `GET /api/admin/callback` + `PATCH /api/admin/callback` (callback_requests)
+- `GET /api/admin/newsletter` + `PATCH /api/admin/newsletter` (newsletter_subscribers)
+
 - **Admin dashboard** — View all registrations and contact submissions
 - **Event management** — Create and publish events from a CMS
 - **Payment integration** — Stripe for programme fees or donations

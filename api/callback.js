@@ -1,5 +1,6 @@
-import { supabase } from '../lib/supabase.js';
+import { supabaseAdmin } from '../lib/supabase-admin.js';
 import { sendCallbackNotification } from '../lib/email.js';
+import { sendSmsToAdmin } from '../lib/twilio.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -15,7 +16,7 @@ export default async function handler(req, res) {
     }
 
     // ── Save to DB ──
-    const { error: dbError } = await supabase.from('callback_requests').insert({
+    const { error: dbError } = await supabaseAdmin.from('callback_requests').insert({
       name: name.trim(),
       phone: phone.trim(),
       email: email?.trim().toLowerCase() || null,
@@ -30,8 +31,12 @@ export default async function handler(req, res) {
       // Don't block — still notify the team
     }
 
-    // ── Notify team ──
-    await sendCallbackNotification({ name, email, phone, preferredTime, reason });
+    // ── Notify team (email + SMS) ──
+    const smsBody = `Call-back request: ${name.trim()} — ${phone.trim()} — ${preferredTime || 'Any time'} — ${reason?.trim() || 'General enquiry'}`;
+    await Promise.allSettled([
+      sendCallbackNotification({ name, email, phone, preferredTime, reason }),
+      sendSmsToAdmin({ body: smsBody }),
+    ]);
 
     return res.status(200).json({
       success: true,
